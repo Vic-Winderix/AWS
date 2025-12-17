@@ -123,6 +123,50 @@ resource "aws_db_instance" "mysql" {
 
 /*
 ===========================================================
+Roles en permissie
+===========================================================
+- Maak een nieuwe role aan voor de API en de APP
+*/
+
+resource "aws_iam_role" "api_role" {
+  name = "api-s3-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "api_s3_policy" {
+  role = aws_iam_role.api_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "s3:PutObject",
+        "s3:GetObject"
+      ]
+      Resource = "${aws_s3_bucket.uploads.arn}/*"
+    }]
+  })
+}
+
+resource "aws_iam_instance_profile" "api_profile" {
+  name = "api-instance-profile"
+  role = aws_iam_role.api_role.name
+}
+
+
+/*
+===========================================================
 EC2 instance API & APP
 ===========================================================
 - Maak de instance voor de API aan
@@ -133,29 +177,26 @@ EC2 instance API & APP
 
 # Maak insrance voor API aan
 resource "aws_instance" "api" {
-  ami           = "ami-0d64bb532e0502c46" # Amazon Linux 2
+  ami           = "ami-0905a3c97561e0b69" # Ubuntu Linux
   instance_type = "t3.micro"
   key_name      = aws_key_pair.generated.key_name
+  iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
   security_groups = [aws_security_group.web_sg.name]
-  user_data       = <<EOF
-    #!/bin/bash
-    sudo apt update
-    sudo apt upgrade
-    sudo apt install -y httpd php php-mysqlnd
-    systemctl start httpd
-    systemctl enable httpd
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update -y",
+      "sudo apt upgrade -y",
+      "sudo apt install -y apache2 php php-mysql awscli",
+      "sudo systemctl enable apache2",
+      "sudo systemctl start apache2"
 
-    cat << 'PHP' > /var/www/html/index.php
-    <?php
-    echo "PHP API is running";
-    ?>
-    PHP
-  EOF
+    ]
+  }
 }
 
 resource "aws_instance" "app" {
-  ami           = "ami-0d64bb532e0502c46" # Amazon Linux 2
+  ami           = "ami-0905a3c97561e0b69" # Ubuntu Linux 
   instance_type = "t3.micro"
   key_name      = aws_key_pair.generated.key_name # Script om php te installeren
 
@@ -165,10 +206,11 @@ resource "aws_instance" "app" {
     #!/bin/bash
     sudo apt update
     sudo apt upgrade
-    sudo apt install -y httpd php php-mysqlnd
-    systemctl start httpd
-    systemctl enable httpd
+    sudo apt install -y apache2 php php-mysql awscli
+    systemctl start apache2
+    systemctl enable apache2
 
+    sudo rm /var/www/html/index.php
     cat << 'PHP' > /var/www/html/index.php
     <?php
     echo "PHP APP is running";
