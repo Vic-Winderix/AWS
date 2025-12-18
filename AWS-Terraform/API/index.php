@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
     // Upload naar S3
     $cmd = escapeshellcmd(
-        "$aws s3 cp " . escapeshellarg($tmpFile) .
+        "aws s3 cp " . escapeshellarg($tmpFile) .
         " s3://$bucketName/" . escapeshellarg($fileName) .
         " --region $region"
     );
