@@ -117,7 +117,7 @@ resource "aws_db_instance" "mysql" {
   username               = "admin"
   password               = "r0998157!"
   skip_final_snapshot    = true
-  publicly_accessible    = false
+  publicly_accessible    = true
   vpc_security_group_ids = [aws_security_group.db.id]
 }
 
@@ -145,7 +145,7 @@ resource "aws_iam_role" "api_role" {
 }
 
 resource "aws_iam_role_policy" "api_s3_policy" {
-  role = aws_iam_role.api_role.id
+  role = aws_iam_role.api_role.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -153,7 +153,8 @@ resource "aws_iam_role_policy" "api_s3_policy" {
       Effect = "Allow"
       Action = [
         "s3:PutObject",
-        "s3:GetObject"
+        "s3:GetObject",
+        "s3:ListBucket"
       ]
       Resource = "${aws_s3_bucket.uploads.arn}/*"
     }]
@@ -184,7 +185,11 @@ resource "aws_instance" "api" {
   iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
   security_groups = [aws_security_group.web_sg.name]
-  user_data = file("${path.module}/userdata.sh")
+  user_data = templatefile("${path.module}/API.tmpl",{
+    db_endpoint = aws_db_instance.mysql.address
+    tablescript = file("${path.module}/createdb.sql")
+    s3_bucket = aws_s3_bucket.uploads.bucket
+  })
 }
 
 resource "aws_instance" "app" {
@@ -193,10 +198,10 @@ resource "aws_instance" "app" {
   key_name      = aws_key_pair.generated.key_name # Script om php te installeren
 
   security_groups = [aws_security_group.web_sg.name] # Security group die je hebt aangemaakt
+  iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
-  user_data = file("${path.module}/userdata.sh")
+  user_data = templatefile("${path.module}/app.tmpl",{
+    db_endpoint = aws_db_instance.mysql.address
+    s3_bucket = aws_s3_bucket.uploads.bucket
+  })
 }
-
-
-
-
