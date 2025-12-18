@@ -184,22 +184,7 @@ resource "aws_instance" "api" {
   iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
   security_groups = [aws_security_group.web_sg.name]
-  provisioner "remote-exec" {
-    inline = [
-      "apt remove needrestart -y", # Zal popup over restart services disabelen
-      "apt update -y",
-      "apt upgrade -y",
-      "apt install -y apache2",
-      "systemctl status apache2.service"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu" # Ubuntu AMI
-      private_key = tls_private_key.ssh_key.private_key_pem
-      host        = self.public_ip
-    }
-  }
+  user_data = file("${path.module}/userdata.sh")
 }
 
 resource "aws_instance" "app" {
