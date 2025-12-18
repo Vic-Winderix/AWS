@@ -3,6 +3,7 @@
     apt upgrade -y
     apt install -y apache2 php php-mysql unzip php-curl
     
+    
     systemctl enable apache2
     systemctl restart apache2
     
@@ -12,15 +13,6 @@
 
     rm /var/www/html/index.html
     cd /var/www/html
-    wget https://raw.githubusercontent.com/Vic-Winderix/AWS/refs/heads/main/AWS-Terraform/index.php
+    wget https://raw.githubusercontent.com/Vic-Winderix/AWS/refs/heads/main/AWS-Terraform/APP/index.php
 
     apt install mysql-client -y
-
-    sudo cat <<EOF > /home/ubuntu/data.sql
-        ${tablescript}
-EOF
-
-    until mysql -h ${db_endpoint} -u admin -p'r0998157!' files; do
-        echo "Waiting for DB..."
-        sleep 5
-    done
