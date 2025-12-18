@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
         // Prepared statement (mysqli)
         $stmt = $conn->prepare(
-            "INSERT INTO files (filename, description) VALUES (?, ?)"
+            "INSERT INTO bestanden (filename, description) VALUES (?, ?)"
         );
 
         if (!$stmt) {

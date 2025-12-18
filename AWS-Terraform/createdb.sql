@@ -1,4 +1,4 @@
-CREATE TABLE files (
+CREATE TABLE bestanden (
     id INT AUTO_INCREMENT PRIMARY KEY,
     filename VARCHAR(255) NOT NULL,
     description TEXT,
