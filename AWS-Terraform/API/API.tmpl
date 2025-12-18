@@ -25,23 +25,24 @@ EOF
         sleep 5
     done
 
-    sudo cat <<EOF > /var/www/html/connect.php
-        <?php
-            $db_host = "${db_endpoint}";
-            $db_user = "admin";
-            $db_pass = "r0998157!";
-            $db_name = "files";
-            ini_set('display_errors', 1);
-            ini_set('display_startup_errors', 1);
-            error_reporting(E_ALL);
+    sudo cat <<'EOF' > /var/www/html/connect.php
+<?php
+$db_host = "${db_endpoint}";
+$db_user = "admin";
+$db_pass = "r0998157!";
+$db_name = "files";
 
-            $conn = new mysqli($db_host,$db_user,$db_pass,"$db_name");
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-            if ($conn->connect_errno) {
-                echo "Sorry, this website is experiencing problems.<br>";
-                echo "Errno: " . $conn->connect_errno . "<br>";
-                echo "Error: " . $conn->connect_error . "<br>";
-                exit;
-            }
-        ?>
+$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+
+if ($conn->connect_errno) {
+    echo "Sorry, this website is experiencing problems.<br>";
+    echo "Errno: " . $conn->connect_errno . "<br>";
+    echo "Error: " . $conn->connect_error . "<br>";
+    exit;
+}
+?>
 EOF

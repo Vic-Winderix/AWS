@@ -4,7 +4,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Database connectie (1x)
-require_once 'connection.php';
+require_once 'connect.php';
 
 // =======================
 // CONFIG
