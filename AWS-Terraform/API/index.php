@@ -4,14 +4,13 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Database connectie (1x)
-require_once 'connect.php';
+include("connect.php");
 
 // =======================
 // CONFIG
 // =======================
 $bucketName = 'terraform-vicwin-uploads';
 $region = 'eu-west-1';
-$awsPath = '/usr/bin/aws';
 
 // =======================
 // FORM VERWERKING
@@ -24,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
     // Upload naar S3
     $cmd = escapeshellcmd(
-        "$awsPath s3 cp " . escapeshellarg($tmpFile) .
+        "$aws s3 cp " . escapeshellarg($tmpFile) .
         " s3://$bucketName/" . escapeshellarg($fileName) .
         " --region $region"
     );
