@@ -185,7 +185,7 @@ resource "aws_instance" "api" {
   iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
   security_groups = [aws_security_group.web_sg.name]
-  user_data = templatefile("${path.module}/API.tmpl",{
+  user_data = templatefile("${path.module}/API/API.tmpl",{
     db_endpoint = aws_db_instance.mysql.address
     tablescript = file("${path.module}/createdb.sql")
     s3_bucket = aws_s3_bucket.uploads.bucket
@@ -200,7 +200,7 @@ resource "aws_instance" "app" {
   security_groups = [aws_security_group.web_sg.name] # Security group die je hebt aangemaakt
   iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
-  user_data = templatefile("${path.module}/app.tmpl",{
+  user_data = templatefile("${path.module}/APP/app.tmpl",{
     db_endpoint = aws_db_instance.mysql.address
     s3_bucket = aws_s3_bucket.uploads.bucket
   })

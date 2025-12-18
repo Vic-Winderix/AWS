@@ -1,4 +1,5 @@
 <?php
+include("connect.php");
 $bucketName = 'terraform-vicwin-uploads';
 $region = 'eu-west-1';
 
