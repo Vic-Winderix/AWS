@@ -121,6 +121,7 @@ resource "aws_db_instance" "mysql" {
   vpc_security_group_ids = [aws_security_group.db.id]
 }
 
+
 /*
 ===========================================================
 Roles en permissie
@@ -177,21 +178,27 @@ EC2 instance API & APP
 
 # Maak insrance voor API aan
 resource "aws_instance" "api" {
-  ami           = "ami-0905a3c97561e0b69" # Ubuntu Linux
-  instance_type = "t3.micro"
-  key_name      = aws_key_pair.generated.key_name
+  ami                  = "ami-0905a3c97561e0b69" # Ubuntu Linux
+  instance_type        = "t3.micro"
+  key_name             = aws_key_pair.generated.key_name
   iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
   security_groups = [aws_security_group.web_sg.name]
   provisioner "remote-exec" {
     inline = [
+      "sudo apt remove needrestart -y", # Zal popup over restart services disabelen
       "sudo apt update -y",
       "sudo apt upgrade -y",
-      "sudo apt install -y apache2 php php-mysql awscli",
-      "sudo systemctl enable apache2",
-      "sudo systemctl start apache2"
-
+      "sudo apt install -y apache2",
+      "sudo systemctl status apache2.service"
     ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu" # Ubuntu AMI
+      private_key = tls_private_key.ssh_key.private_key_pem
+      host        = self.public_ip
+    }
   }
 }
 
@@ -218,6 +225,7 @@ resource "aws_instance" "app" {
     PHP
   EOF
 }
+
 
 
 
