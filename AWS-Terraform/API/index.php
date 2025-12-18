@@ -1,8 +1,21 @@
 <?php
-include("connect.php");
-$bucketName = 'terraform-vicwin-uploads';
-$region = 'eu-west-1'; // bv. us-east-1
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
+// Database connectie (1x)
+require_once 'connection.php';
+
+// =======================
+// CONFIG
+// =======================
+$bucketName = 'terraform-vicwin-uploads';
+$region = 'eu-west-1';
+$awsPath = '/usr/bin/aws';
+
+// =======================
+// FORM VERWERKING
+// =======================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
     $tmpFile = $_FILES['file']['tmp_name'];
@@ -11,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
     // Upload naar S3
     $cmd = escapeshellcmd(
-        "aws s3 cp " . escapeshellarg($tmpFile) .
+        "$awsPath s3 cp " . escapeshellarg($tmpFile) .
         " s3://$bucketName/" . escapeshellarg($fileName) .
         " --region $region"
     );
@@ -20,15 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
     if ($return_var === 0) {
 
-        // Opslaan in database
-        $stmt = $pdo->prepare(
-            "INSERT INTO files (filename, description) VALUES (:filename, :description)"
+        // Prepared statement (mysqli)
+        $stmt = $conn->prepare(
+            "INSERT INTO files (filename, description) VALUES (?, ?)"
         );
 
-        $stmt->execute([
-            ':filename' => $fileName,
-            ':description' => $description
-        ]);
+        if (!$stmt) {
+            die("Prepare failed: " . $conn->error);
+        }
+
+        $stmt->bind_param("ss", $fileName, $description);
+        $stmt->execute();
+        $stmt->close();
 
         echo "<p><strong>Bestand succesvol geüpload!</strong></p>";
         echo "<p>Bestand: " . htmlspecialchars($fileName) . "</p>";
@@ -40,6 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     }
 
 } else {
+    // =======================
+    // HTML FORMULIER
+    // =======================
     echo '<!DOCTYPE html>
     <html>
     <body>
@@ -52,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
             <p>
                 <label>Beschrijving:</label><br>
-                <textarea name="description" rows="4" cols="50" placeholder="Omschrijving van het bestand"></textarea>
+                <textarea name="description" rows="4" cols="50"></textarea>
             </p>
 
             <button type="submit">Upload</button>
