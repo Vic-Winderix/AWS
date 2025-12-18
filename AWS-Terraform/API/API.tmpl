@@ -30,9 +30,9 @@ EOF
     sudo cat <<'EOF' > /var/www/html/connect.php
 <?php
 $db_host = "${db_endpoint}";
-$db_user = "admin";
-$db_pass = "r0998157!";
-$db_name = "files";
+$db_user = "${db_user}";
+$db_pass = "${db_pass}";
+$db_name = "${db_name}";
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

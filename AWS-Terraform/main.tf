@@ -18,7 +18,7 @@ terraform {
 
 # Stel de region in 
 provider "aws" {
-  region = "eu-west-1"
+  region = var.aws_region
 }
 
 /*
@@ -37,20 +37,20 @@ resource "tls_private_key" "ssh_key" {
 
 # Maak een AWS key-pair aan met de Terraform keys
 resource "aws_key_pair" "generated" {
-  key_name   = "terraform-key"
+  key_name   = var.key_name
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
 # Save de private key
 resource "local_file" "private_key" {
   content         = tls_private_key.ssh_key.private_key_pem
-  filename        = "terraform-key.pem"
+  filename        = "${var.key_name}.pem"
   file_permission = "0400"
 }
 
 # Maak een security group aan voor de webserver
 resource "aws_security_group" "web_sg" {
-  name        = "web-sg"
+  name        = var.web_sg_name
   description = "Allow SSH and HTTP"
 
   # Allow SSH
@@ -81,7 +81,7 @@ resource "aws_security_group" "web_sg" {
 
 # Maak de security group aan voor de database
 resource "aws_security_group" "db" {
-  name = "db-sg"
+  name = var.db_sg_name
 
   ingress {
     from_port       = 3306
@@ -101,7 +101,7 @@ S3 bucket & database
 
 # Maak de S3 bucket
 resource "aws_s3_bucket" "uploads" {
-  bucket = "terraform-vicwin-uploads" # Naam van de bucket
+  bucket = var.s3_bucket_name # Naam van de bucket
   acl    = "private"                  # Bucket zal private zijn
   versioning {
     enabled = true
@@ -112,10 +112,10 @@ resource "aws_db_instance" "mysql" {
   allocated_storage      = 20
   engine                 = "mysql"
   engine_version         = "8.0"
-  instance_class         = "db.t3.micro"
-  name                   = "files"
-  username               = "admin"
-  password               = "r0998157!"
+  instance_class         = var.db_instance_class
+  name                   = var.db_name
+  username               = var.db_username
+  password               = var.db_password
   skip_final_snapshot    = true
   publicly_accessible    = true
   vpc_security_group_ids = [aws_security_group.db.id]
@@ -179,8 +179,8 @@ EC2 instance API & APP
 
 # Maak insrance voor API aan
 resource "aws_instance" "api" {
-  ami                  = "ami-0905a3c97561e0b69" # Ubuntu Linux
-  instance_type        = "t3.micro"
+  ami                  = var.ami_id
+  instance_type        = var.instance_type
   key_name             = aws_key_pair.generated.key_name
   iam_instance_profile = aws_iam_instance_profile.api_profile.name
 
@@ -189,12 +189,15 @@ resource "aws_instance" "api" {
     db_endpoint = aws_db_instance.mysql.address
     tablescript = file("${path.module}/createdb.sql")
     s3_bucket = aws_s3_bucket.uploads.bucket
+    db_user = var.db_username
+    db_pass = var.db_password
+    db_name = var.db_name
   })
 }
 
 resource "aws_instance" "app" {
-  ami           = "ami-0905a3c97561e0b69" # Ubuntu Linux 
-  instance_type = "t3.micro"
+  ami                  = var.ami_id
+  instance_type        = var.instance_type
   key_name      = aws_key_pair.generated.key_name # Script om php te installeren
 
   security_groups = [aws_security_group.web_sg.name] # Security group die je hebt aangemaakt
@@ -203,5 +206,8 @@ resource "aws_instance" "app" {
   user_data = templatefile("${path.module}/APP/app.tmpl",{
     db_endpoint = aws_db_instance.mysql.address
     s3_bucket = aws_s3_bucket.uploads.bucket
+    db_user = var.db_username
+    db_pass = var.db_password
+    db_name = var.db_name
   })
 }
