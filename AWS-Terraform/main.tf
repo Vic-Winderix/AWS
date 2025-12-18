@@ -106,7 +106,9 @@ resource "aws_s3_bucket" "uploads" {
   versioning {
     enabled = true
   }
+  force_destroy = true
 }
+
 # Maak de database aan
 resource "aws_db_instance" "mysql" {
   allocated_storage      = 20
