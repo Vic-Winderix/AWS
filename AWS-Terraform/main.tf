@@ -186,11 +186,11 @@ resource "aws_instance" "api" {
   security_groups = [aws_security_group.web_sg.name]
   provisioner "remote-exec" {
     inline = [
-      "sudo apt remove needrestart -y", # Zal popup over restart services disabelen
-      "sudo apt update -y",
-      "sudo apt upgrade -y",
-      "sudo apt install -y apache2",
-      "sudo systemctl status apache2.service"
+      "apt remove needrestart -y", # Zal popup over restart services disabelen
+      "apt update -y",
+      "apt upgrade -y",
+      "apt install -y apache2",
+      "systemctl status apache2.service"
     ]
 
     connection {
@@ -209,21 +209,7 @@ resource "aws_instance" "app" {
 
   security_groups = [aws_security_group.web_sg.name] # Security group die je hebt aangemaakt
 
-  user_data = <<EOF
-    #!/bin/bash
-    sudo apt update
-    sudo apt upgrade
-    sudo apt install -y apache2 php php-mysql awscli
-    systemctl start apache2
-    systemctl enable apache2
-
-    sudo rm /var/www/html/index.php
-    cat << 'PHP' > /var/www/html/index.php
-    <?php
-    echo "PHP APP is running";
-    ?>
-    PHP
-  EOF
+  user_data = file("${path.module}/userdata.sh")
 }
 
 
