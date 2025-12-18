@@ -1,16 +1,19 @@
 <?php
-include("connect.php");
+include("connect.php"); // je mysqli connectie
 $bucketName = 'terraform-vicwin-uploads';
 $region = 'eu-west-1';
 
-// Download script: als er een 'file' parameter is, download het bestand
+// ========================
+// Download script
+// ========================
 if (isset($_GET['file'])) {
     $fileName = $_GET['file'];
     $tmpFile = tempnam(sys_get_temp_dir(), 's3_');
 
-    // Download het bestand tijdelijk
-    $cmd = escapeshellcmd("aws s3 cp s3://$bucketName/$fileName $tmpFile --region $region");
-    exec($cmd, $output, $return_var);
+    // Download het bestand tijdelijk van S3
+    $cmd = escapeshellcmd("aws s3 cp s3://$bucketName/" . escapeshellarg($fileName) . " " . escapeshellarg($tmpFile) . " --region $region");
+
+    exec($cmd . " 2>&1", $output, $return_var);
 
     if ($return_var === 0) {
         header('Content-Description: File Transfer');
@@ -24,32 +27,52 @@ if (isset($_GET['file'])) {
         unlink($tmpFile);
         exit;
     } else {
-        echo "Fout bij downloaden.";
+        echo "Fout bij downloaden van S3.";
         echo "<pre>" . implode("\n", $output) . "</pre>";
         exit;
     }
 }
 
-// Anders: lijst van bestanden tonen
-$cmd = escapeshellcmd("aws s3 ls s3://$bucketName --region $region");
-exec($cmd, $output, $return_var);
+// ========================
+// Lijst van bestanden tonen
+// ========================
+$result = $conn->query("SELECT filename, description FROM bestanden ORDER BY created_at DESC");
 
-echo '<!DOCTYPE html><html><body>';
-echo '<h1>Bestanden in S3 bucket</h1>';
+echo '<!DOCTYPE html>
+<html>
+<head>
+    <title>Bestanden overzicht</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        a.button { text-decoration: none; padding: 5px 10px; background-color: #4CAF50; color: white; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<h1>Bestanden in de database</h1>';
 
-if ($return_var === 0 && !empty($output)) {
-    echo '<ul>';
-    foreach ($output as $line) {
-        // De regel van aws s3 ls heeft format: YYYY-MM-DD HH:MM:SS    SIZE FILENAME
-        $parts = preg_split('/\s+/', $line, 4);
-        if (isset($parts[3])) {
-            $fileName = $parts[3];
-            echo '<li><a href="?file=' . urlencode($fileName) . '">' . htmlspecialchars($fileName) . '</a></li>';
-        }
+if ($result && $result->num_rows > 0) {
+    echo '<table>
+        <tr>
+            <th>Bestandsnaam</th>
+            <th>Omschrijving</th>
+            <th>Download</th>
+        </tr>';
+    
+    while ($row = $result->fetch_assoc()) {
+        $file = htmlspecialchars($row['filename']);
+        $desc = htmlspecialchars($row['description']);
+        echo '<tr>
+            <td>' . $file . '</td>
+            <td>' . $desc . '</td>
+            <td><a class="button" href="?file=' . urlencode($row['filename']) . '">Download</a></td>
+        </tr>';
     }
-    echo '</ul>';
+
+    echo '</table>';
 } else {
-    echo '<p>Geen bestanden gevonden of fout bij ophalen.</p>';
+    echo '<p>Geen bestanden gevonden in de database.</p>';
 }
 
 echo '</body></html>';

@@ -25,6 +25,8 @@ EOF
         sleep 5
     done
 
+    mysql -h ${db_endpoint} -u admin -p'r0998157!' files < /home/ubuntu/data.sql
+
     sudo cat <<'EOF' > /var/www/html/connect.php
 <?php
 $db_host = "${db_endpoint}";
