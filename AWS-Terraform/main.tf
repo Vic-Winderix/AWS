@@ -14,6 +14,11 @@ terraform {
       version = "~> 3.5.0"
     }
   }
+  backend "s3" {
+    bucket = "vw-terraform-state-bucket"
+    key    = "prod/terraform.tfstate"
+    region = "eu-west-1"
+  }
 }
 
 # Stel de region in 
